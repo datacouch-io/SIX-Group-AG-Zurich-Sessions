@@ -1,0 +1,12 @@
+dn: uid=john,ou=sixgroups,dc=min,dc=io
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+cn: John Doe
+sn: Doe
+uid: john
+userPassword: john_password
+loginShell: /bin/bash
+uidNumber: 1000
+gidNumber: 1000
+homeDirectory: /home/john

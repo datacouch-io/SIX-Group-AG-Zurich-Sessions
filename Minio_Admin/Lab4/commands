@@ -1,0 +1,53 @@
+# Step 2: Create a new user
+mc admin user add myminio-new john john123456
+# Example: Creates a user with the username 'k8s-admin' and password 'securepassword123'
+
+# Step 3: List users
+mc admin user list myminio-new
+# Example: Lists all users in the MinIO instance
+
+# Step 4: Create a custom policy
+cat <<EOF > k8s-admin-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket",
+        "s3:DeleteObject"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+        "arn:aws:s3:::*"
+      ]
+    }
+  ]
+}
+EOF
+# Example: Creates a policy file 'k8s-admin-policy.json' granting full access to all buckets
+
+# Step 5: Add the policy to MinIO
+mc admin policy create  myminio-new k8s-admin-policy k8s-admin-policy.json
+# Example: Adds the custom policy 'k8s-admin-policy' to MinIO
+
+# Step 6: Attach the policy to the user
+mc admin policy attach myminio-new k8s-admin-policy --user john
+# Example: Attaches the 'k8s-admin-policy' to the user 'k8s-admin'
+
+# Step 7: Check user information
+mc admin user info myminio-new john
+# Example: Displays information about the user 'k8s-admin'
+
+# Step 8: Disable the user
+mc admin user disable myminio-new john
+# Example: Disables the user 'k8s-admin'
+
+# Step 9: Enable the user
+mc admin user enable myminio-new john
+# Example: Re-enables the user 'k8s-admin'
+
+# Step 10: Remove the user
+mc admin user remove myminio-new john
+# Example: Removes the user 'k8s-admin'

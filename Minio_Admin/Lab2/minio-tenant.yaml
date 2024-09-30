@@ -1,0 +1,30 @@
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  labels:
+    app: minio
+  name: myminio
+  namespace: minio-tenant
+spec:
+  configuration:
+    name: storage-configuration
+  image: quay.io/minio/minio:RELEASE.2024-08-17T01-24-54Z
+  mountPath: /export
+  exposeServices:
+    minio: true       # Expose MinIO API
+    console: true     # Expose MinIO Console
+  pools:
+  - name: pool-0
+    servers: 2
+    volumeClaimTemplate:
+      apiVersion: v1
+      kind: PersistentVolumeClaim  # Changed to singular
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: standard
+    volumesPerServer: 2
+  requestAutoCert: false

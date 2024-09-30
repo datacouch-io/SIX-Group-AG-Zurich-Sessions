@@ -1,0 +1,26 @@
+#install minio client
+wget https://dl.min.io/client/mc/release/linux-amd64/mc
+chmod +x mc
+sudo mv mc /usr/local/bin/
+
+#port-forward
+kubectl port-forward svc/myminio-hl  9000 -n minio-tenant &
+
+#set alias
+mc alias set myminio-new http://localhost:9000 minio minio123
+
+#check alias
+mc alias list
+
+#list buckets
+mc ls myminio-new
+
+#check cluster status 
+mc admin info myminio-new
+
+#admin commands
+mc admin
+
+
+
+
