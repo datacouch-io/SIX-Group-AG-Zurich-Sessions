@@ -1,0 +1,14 @@
+{
+    "Rules": [
+      {
+        "ID": "TransitionRule",
+        "Status": "Enabled",
+        "Filter": {},
+        "Transition": {
+          "Days": 0,
+          "StorageClass": "SECONDARY-TIER"
+        }
+      }
+    ]
+  }
+  
