@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:41517cfacc8d3e8e81c69a4a523923ac14e9d34d5007c6635064b0b542188ded
-size 827
+[	{
+		"_id": "Titanic_2001",
+		"name":"Titanic",
+		"year":2001,
+	    "genre": ["romantic","drama"],
+		"rating":4,
+		"description" : "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic"
+	},
+	{
+		"_id":"Sunshine_2009",
+		"name":"Sunshine",
+		"year":2004,
+		"genre": ["sci-fi","thriller"],
+		"rating":3.5,
+		"description" : "A team of international astronauts are sent on a dangerous mission to reignite the dying Sun with a nuclear fission bomb in 2057."
+	},
+	{
+		"_id": "Forest_2005",
+		"name":"Forest Gump",
+		"year":2005,
+		"genre": ["drama","crime","thriller"],
+		"rating":3,
+		"description": "A team of international astronauts are sent on a dangerous mission to reignite the dying Sun with a nuclear fission bomb in 2057."
+	}
+
+]
