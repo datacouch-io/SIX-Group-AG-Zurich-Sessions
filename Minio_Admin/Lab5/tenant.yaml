@@ -40,7 +40,7 @@ kind: Tenant
 metadata:
   labels:
     app: minio
-  name: myminio
+  name: ldap-myminio
   namespace: minio-tenant
 spec:
   configuration:
