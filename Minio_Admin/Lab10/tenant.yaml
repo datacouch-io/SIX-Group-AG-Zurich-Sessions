@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minio-tenant
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: storage-configuration
+  namespace: minio-tenant
+stringData:
+  config.env: |-
+    export MINIO_ROOT_USER="minio"
+    export MINIO_ROOT_PASSWORD="minio123"
+    export MINIO_STORAGE_CLASS_STANDARD="EC:2"
+    export MINIO_BROWSER="on"
+type: Opaque
+---
+apiVersion: v1
+data:
+  CONSOLE_ACCESS_KEY: Y29uc29sZQ==
+  CONSOLE_SECRET_KEY: Y29uc29sZTEyMw==
+kind: Secret
+metadata:
+  name: storage-user
+  namespace: minio-tenant
+type: Opaque
+---
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  labels:
+    app: minio
+  name: myminio
+  namespace: minio-tenant
+spec:
+  ## Define configuration for KES (stateless and distributed key-management system)
+  ## Refer https://github.com/minio/kes
+  kes:
+    image: "" # minio/kes:2024-08-16T14-39-28Z
+    env: [ ]
+    replicas: 2
+    kesSecret:
+      name: kes-configuration
+    imagePullPolicy: "IfNotPresent"
+    ## Use this field to provide external certificates for the KES server. TLS for KES pods will be configured
+    ## by mounting a Kubernetes secret under /tmp/kes folder, supported types:
+    ## Opaque | kubernetes.io/tls | cert-manager.io/v1alpha2 | cert-manager.io/v1
+    ##
+    ## ie:
+    ##
+    ##  externalCertSecret:
+    ##    name: tls-certificates-for-kes
+    ##    type: kubernetes.io/tls
+    ##
+    ## Create secrets as explained here:
+    ## https://github.com/minio/minio/tree/master/docs/tls/kubernetes#2-create-kubernetes-secret
+    externalCertSecret: null
+    ## Use this field to provide client certificates for KES. This can be used to configure
+    ## mTLS for KES and your KMS. Files will be mounted under /tmp/kes folder, supported types:
+    ## Opaque | kubernetes.io/tls | cert-manager.io/v1alpha2 | cert-manager.io/v1
+    ##
+    ## ie:
+    ##
+    ##  clientCertSecret:
+    ##    name: mtls-certificates-for-kms
+    ##    type: Opaque
+    ##
+    ## Create secrets as explained here:
+    ## https://github.com/minio/minio/tree/master/docs/tls/kubernetes#2-create-kubernetes-secret
+    clientCertSecret: null
+    ## Key name to be created on the KMS, default is "my-minio-key"
+    keyName: ""
+    resources: { }
+    nodeSelector: { }
+    affinity:
+      nodeAffinity: { }
+      podAffinity: { }
+      podAntiAffinity: { }
+    tolerations: [ ]
+    annotations: { }
+    labels: { }
+    serviceAccountName: ""
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      fsGroup: 1000
+
+  configuration:
+    name: storage-configuration
+  image: quay.io/minio/minio:RELEASE.2024-08-17T01-24-54Z
+  mountPath: /export
+  pools:
+  - name: pool-0
+    servers: 2
+    volumeClaimTemplate:
+      apiVersion: v1
+      kind: persistentvolumeclaims
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: standard
+    volumesPerServer: 2
+  requestAutoCert: true
+  users:
+  - name: storage-user
