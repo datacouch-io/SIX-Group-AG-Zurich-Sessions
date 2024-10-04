@@ -52,10 +52,6 @@ spec:
             storage: 1Gi
         storageClassName: standard
     volumesPerServer: 2
-  requestAutoCert: false
-  externalCertSecret:
-  - name: minio-tls
-    type: kubernetes.io/tls
-
+  requestAutoCert: true
   users:
   - name: storage-user

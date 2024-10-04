@@ -1,9 +1,9 @@
 apiVersion: certificates.k8s.io/v1
 kind: CertificateSigningRequest
 metadata:
-  name: operator-minio-operator-csr
+  name: myminio-csr
 spec:
-  request: <copy base64 encoded curve.csr here>
+  request: <base-64-coded-csr>
   signerName: kubernetes.io/kubelet-serving
   expirationSeconds: 604800 #extend here for 1 year long
   groups:
@@ -12,7 +12,7 @@ spec:
   - system:authenticated
   - system:nodes
   usages:
-	- "digital signature"
-	- "key encipherment"
-	- "server auth"
+    - "digital signature"
+    - "key encipherment"
+    - "server auth"
   username: system:serviceaccount:minio-operator:minio-operator
