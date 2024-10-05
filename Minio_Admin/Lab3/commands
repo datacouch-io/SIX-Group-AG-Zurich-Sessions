@@ -1,3 +1,20 @@
+minikube delete
+
+minikube start
+ 
+cd /SIX-Group-AG-Zurich-Sessions/Minio_Admin/Lab2
+ 
+kubectl apply -f minio-operator.yaml
+ 
+kubectl create -f minio-namespace.yaml
+ 
+kubectl create -f minio-secret.yaml
+ 
+kubectl create -f minio-tenant.yaml
+ 
+kubectl get pod -n minio-tenant
+ 
+
 #install minio client
 wget https://dl.min.io/client/mc/release/linux-amd64/mc
 chmod +x mc
