@@ -13,7 +13,7 @@ helm install postgres oci://registry-1.docker.io/bitnamicharts/postgresql  -n me
 
 kubectl wait --for=condition=ready pod --all --namespace metastore 
 
-docker build -t metastore hive/docker/ --no-cache
+docker build -t metastore hive/docker/ 
 minikube image load metastore
 chmod 777 ./hive/run-hive.sh
 ./hive/run-hive.sh
