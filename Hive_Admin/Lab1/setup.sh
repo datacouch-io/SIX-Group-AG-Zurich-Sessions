@@ -1,4 +1,5 @@
 minikube start
+chmod 777 ./minio/run_minio.sh
 ./minio/run_minio.sh
 
 kubectl create namespace metastore
@@ -14,6 +15,7 @@ kubectl wait --for=condition=ready pod --all --namespace metastore
 
 docker build -t metastore hive/docker/ --no-cache
 minikube image load metastore
+chmod 777 ./hive/run-hive.sh
 ./hive/run-hive.sh
 
 kubectl wait --for=condition=ready pod --all --namespace metastore
