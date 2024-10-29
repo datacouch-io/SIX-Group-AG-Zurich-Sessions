@@ -6,7 +6,7 @@ pip install -r requirements.txt
 
 python minio_metaflow.py run
 
-## Run Matafloe Pipeline in VS Code
+## Run Mataflow Pipeline in VS Code
 
 python3 minio_metaflow.py run
 
