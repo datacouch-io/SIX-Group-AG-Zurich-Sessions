@@ -2,7 +2,7 @@
 
 pip install -r requirements.txt
 
-## Run Matafloe Pipeline in Pycharm
+## Run Mataflow Pipeline in Pycharm
 
 python minio_transform.py run
 
