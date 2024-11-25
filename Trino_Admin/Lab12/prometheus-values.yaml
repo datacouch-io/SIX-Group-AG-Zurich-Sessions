@@ -1,0 +1,20 @@
+server:
+  global:
+    ## How frequently to scrape targets by default
+    scrape_interval: 60s
+    ## How long until a scrape request times out
+    scrape_timeout: 10s
+    ## How frequently to evaluate rules
+    evaluation_interval: 60s
+
+extraScrapeConfigs: |
+  - job_name: 'minio-job'
+    metrics_path: '/minio/v2/metrics/cluster'
+    scheme: http
+    static_configs:
+      - targets: ['myminio-hl.minio-tenant.svc.cluster.local:9000']
+  - job_name: 'trino-job'
+    metrics_path: '/metrics'
+    scheme: http
+    static_configs:
+      - targets: ['trino-cluster-trino.trino.svc.cluster.local:5556']

@@ -1,0 +1,146 @@
+server:
+  workers: 2
+  config:
+    https:
+      enabled: true
+      keystore:
+        path: /etc/trino/generated/tls.pem
+    # -- Trino supports multiple [authentication
+    # types](https://trino.io/docs/current/security/authentication-types.html):
+    # PASSWORD, CERTIFICATE, OAUTH2, JWT, KERBEROS.
+    authenticationType: PASSWORD
+
+additionalConfigProperties:
+    - internal-communication.shared-secret=4f2c3e5647f59c0b7e3f5b4d6b9e401e2c8e5a7b21fa5b6f08eae0131f20ff24
+    - http-server.authentication.allow-insecure-over-http=true
+    - http-server.process-forwarded=true
+    
+    
+service:
+  annotations:
+    custom/name: value
+  port: 8080
+
+auth:
+  # created using htpasswd -B -C 10 password.db admin
+  # every password is admin123
+  passwordAuthSecret: trino-auth-secret
+  groups: |
+    finance:admin,alice,bob
+    marketing:bob
+  refreshPeriod: 15s
+
+
+secretMounts:
+  - name: certificates
+    secretName: certificates
+    path: /etc/trino/certificates
+
+
+coordinator:
+   additionalVolumes:
+    - name: generated-files
+      emptyDir: {}
+   additionalVolumeMounts:
+    - name: generated-files
+      mountPath: /etc/trino/generated
+      readOnly: false
+   additionalExposedPorts:
+    https:
+      servicePort: 8443
+      name: https
+      port: 8443
+      protocol: TCP
+
+
+initContainers:
+  coordinator:
+    - name: init-coordinator
+      image: busybox:1.36
+      imagePullPolicy: IfNotPresent
+      command: ['sh', '-c', "cat /etc/trino/certificates/tls.crt /etc/trino/certificates/tls.key > /etc/trino/generated/tls.pem"]
+      volumeMounts:
+        - name: certificates
+          readOnly: true
+          mountPath: "/etc/trino/certificates"
+        - name: generated-files
+          readOnly: false
+          mountPath: "/etc/trino/generated"
+
+jmx:
+  enabled: true
+  registryPort: 9080
+  serverPort: 9081
+  exporter:
+    enabled: true
+    image: bitnami/jmx-exporter:latest
+    pullPolicy: Always
+    port: 5556
+    configProperties: |
+      startDelaySeconds: 0
+      hostPort: 0.0.0.0:9080
+      rules:
+        - pattern: 'trino.execution*'
+        - pattern: 'trino.memory*'
+  coordinator:
+   enabled: true
+   exporter:
+    enabled: true
+  worker:
+   enabled: true
+   exporter:
+    enabled: true
+
+
+
+serviceMonitor:
+  # serviceMonitor.enabled -- Set to true to create resources for the
+  # [prometheus-operator](https://github.com/prometheus-operator/prometheus-operator).
+  enabled: false
+  # serviceMonitor.labels -- Labels for serviceMonitor, so that Prometheus can select it
+  labels:
+    app.kubernetes.io/instance: prometheus-kube-prometheus-prometheus
+  # serviceMonitor.interval -- The serviceMonitor web endpoint interval
+  interval: "30s"
+  coordinator:
+    enabled: true
+  worker:
+    enabled: true
+
+accessControl:
+  type: configmap
+  refreshPeriod: 60s
+  configFile: "rules.json"
+  rules:
+    rules.json: |-
+      {
+        "catalogs": [
+          {
+            "user": "admin",
+            "catalog": ".*",
+            "allow": "all"
+          },
+          {
+            "user": "alice",
+            "catalog": "(tpch|system)",
+            "allow": "read-only"
+          },
+          {
+            "group": "marketing",
+            "catalog": "(tpch|system)",
+            "allow": "read-only"
+          }
+        ],
+        "schemas": [
+          {
+            "user": "admin",
+            "schema": ".*",
+            "owner": true
+          },
+          {
+            "user": "alice",
+            "owner": false
+          }
+        ]
+      }
+

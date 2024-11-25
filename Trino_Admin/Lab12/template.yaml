@@ -1,0 +1,816 @@
+---
+# Source: trino/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: trino-auth-secret
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+data:
+  group.db: ZmluYW5jZTphZG1pbixhbGljZSxib2IKbWFya2V0aW5nOmJvYgo=
+---
+# Source: trino/templates/configmap-access-control-coordinator.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-access-control-volume-coordinator
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: coordinator
+data:
+  rules.json: "{\n  \"catalogs\": [\n    {\n      \"user\": \"admin\",\n      \"catalog\": \".*\",\n      \"allow\": \"all\"\n    },\n    {\n      \"user\": \"alice\",\n      \"catalog\": \"(tpch|system)\",\n      \"allow\": \"read-only\"\n    },\n    {\n      \"group\": \"marketing\",\n      \"catalog\": \"(tpch|system)\",\n      \"allow\": \"read-only\"\n    }\n  ],\n  \"schemas\": [\n    {\n      \"user\": \"admin\",\n      \"schema\": \".*\",\n      \"owner\": true\n    },\n    {\n      \"user\": \"alice\",\n      \"owner\": false\n    }\n  ]\n}"
+---
+# Source: trino/templates/configmap-catalog.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-catalog
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: catalogs
+data:
+  tpcds.properties: |
+    connector.name=tpcds
+    tpcds.splits-per-node=4
+    
+  tpch.properties: |
+    connector.name=tpch
+    tpch.splits-per-node=4
+---
+# Source: trino/templates/configmap-coordinator.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-coordinator
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: coordinator
+data:
+  node.properties: |
+    node.environment=production
+    node.data-dir=/data/trino
+    plugin.dir=/usr/lib/trino/plugin
+
+  jvm.config: |
+    -server
+    -agentpath:/usr/lib/trino/bin/libjvmkill.so
+    -Xmx8G
+    -XX:+UseG1GC
+    -XX:G1HeapRegionSize=32M
+    -XX:+ExplicitGCInvokesConcurrent
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+ExitOnOutOfMemoryError
+    -XX:-OmitStackTraceInFastThrow
+    -XX:ReservedCodeCacheSize=512M
+    -XX:PerMethodRecompilationCutoff=10000
+    -XX:PerBytecodeRecompilationCutoff=10000
+    -Djdk.attach.allowAttachSelf=true
+    -Djdk.nio.maxCachedBufferSize=2000000
+    # Allow loading dynamic agent used by JOL
+    -XX:+EnableDynamicAgentLoading
+  
+    # https://bugs.openjdk.org/browse/JDK-8329528
+    -XX:+UnlockDiagnosticVMOptions
+    -XX:G1NumCollectionsKeepPinned=10000000
+    -Dcom.sun.management.jmxremote.rmi.port=9081
+
+  config.properties: |
+    coordinator=true
+    node-scheduler.include-coordinator=false
+    http-server.http.port=8080
+    query.max-memory=4GB
+    query.max-memory-per-node=1GB
+    discovery.uri=http://localhost:8080
+    http-server.authentication.type=PASSWORD
+    internal-communication.shared-secret=4f2c3e5647f59c0b7e3f5b4d6b9e401e2c8e5a7b21fa5b6f08eae0131f20ff24
+    http-server.authentication.allow-insecure-over-http=true
+    http-server.process-forwarded=true
+    http-server.https.enabled=true
+    http-server.https.port=8443
+    http-server.https.keystore.path=/etc/trino/generated/tls.pem
+    jmx.rmiregistry.port=9080
+    jmx.rmiserver.port=9081
+  access-control.properties: |
+    access-control.name=file
+    security.refresh-period=60s
+    security.config-file=/etc/trino/access-control/rules.json
+
+  log.properties: |
+    io.trino=INFO
+  password-authenticator.properties: |
+    password-authenticator.name=file
+    file.password-file=/etc/trino/auth/password.db
+  group-provider.properties: |
+    group-provider.name=file
+    file.group-file=/etc/trino/auth/group.db
+    file.refresh-period=15s
+---
+# Source: trino/templates/configmap-coordinator.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-schemas-volume-coordinator
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: coordinator
+data:
+---
+# Source: trino/templates/configmap-jmx-exporter.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-jmx-exporter-config-coordinator
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: jmx
+data:
+  jmx-exporter-config.yaml: |-
+    startDelaySeconds: 0
+    hostPort: 0.0.0.0:9080
+    rules:
+      - pattern: 'trino.memory*'
+      - pattern: 'trino.execution<name=QueryManager>*'
+---
+# Source: trino/templates/configmap-jmx-exporter.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-jmx-exporter-config-worker
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: jmx
+data:
+  jmx-exporter-config.yaml: |-
+    startDelaySeconds: 0
+    hostPort: 0.0.0.0:9080
+    rules:
+      - pattern: 'trino.memory*'
+      - pattern: 'trino.execution<name=QueryManager>*'
+---
+# Source: trino/templates/configmap-worker.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-worker
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: worker
+data:
+  node.properties: |
+    node.environment=production
+    node.data-dir=/data/trino
+    plugin.dir=/usr/lib/trino/plugin
+
+  jvm.config: |
+    -server
+    -agentpath:/usr/lib/trino/bin/libjvmkill.so
+    -Xmx8G
+    -XX:+UseG1GC
+    -XX:G1HeapRegionSize=32M
+    -XX:+ExplicitGCInvokesConcurrent
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+ExitOnOutOfMemoryError
+    -XX:-OmitStackTraceInFastThrow
+    -XX:ReservedCodeCacheSize=512M
+    -XX:PerMethodRecompilationCutoff=10000
+    -XX:PerBytecodeRecompilationCutoff=10000
+    -Djdk.attach.allowAttachSelf=true
+    -Djdk.nio.maxCachedBufferSize=2000000
+    # Allow loading dynamic agent used by JOL
+    -XX:+EnableDynamicAgentLoading
+  
+    # https://bugs.openjdk.org/browse/JDK-8329528
+    -XX:+UnlockDiagnosticVMOptions
+    -XX:G1NumCollectionsKeepPinned=10000000
+    -Dcom.sun.management.jmxremote.rmi.port=9081
+
+  config.properties: |
+    coordinator=false
+    http-server.http.port=8080
+    query.max-memory=4GB
+    query.max-memory-per-node=1GB
+    discovery.uri=http://trino-cluster-trino:8080
+    internal-communication.shared-secret=4f2c3e5647f59c0b7e3f5b4d6b9e401e2c8e5a7b21fa5b6f08eae0131f20ff24
+    http-server.authentication.allow-insecure-over-http=true
+    http-server.process-forwarded=true
+    jmx.rmiregistry.port=9080
+    jmx.rmiserver.port=9081
+
+  log.properties: |
+    io.trino=INFO
+---
+# Source: trino/templates/configmap-worker.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-schemas-volume-worker
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: worker
+data:
+---
+# Source: trino/templates/service-coordinator.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: trino-cluster-trino
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: coordinator
+  annotations:
+    custom/name: value
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 5556
+      targetPort: jmx-exporter
+      protocol: TCP
+      name: jmx-exporter
+    - port: 8443
+      name: https
+      targetPort: 8443
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/component: coordinator
+---
+# Source: trino/templates/service-worker.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: trino-cluster-trino-worker
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: worker
+  annotations:
+    custom/name: value
+spec:
+  clusterIP: None
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 5556
+      targetPort: jmx-exporter
+      protocol: TCP
+      name: jmx-exporter
+  selector:
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/component: worker
+---
+# Source: trino/templates/deployment-coordinator.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trino-cluster-trino-coordinator
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: coordinator
+    trino.io/network-policy-protection: disabled
+spec:
+  progressDeadlineSeconds: 600
+  revisionHistoryLimit: 10
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trino
+      app.kubernetes.io/instance: trino-cluster
+      app.kubernetes.io/component: coordinator
+  template:
+    metadata:
+      annotations:
+        checksum/catalog-config: 3e8d6105d2d54495e15c646bb32ca97084fcb7dfc9226c64bec67f825f92ba74
+        checksum/coordinator-config: 19f9592ad4f0f907c6a00551ccb5c10a4a7c57e1ee8c2c97b0183c32984a8de5
+
+      labels:
+        helm.sh/chart: trino-0.32.0
+        app.kubernetes.io/name: trino
+        app.kubernetes.io/instance: trino-cluster
+        app.kubernetes.io/version: "461"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: coordinator
+        trino.io/network-policy-protection: disabled
+    spec:
+      serviceAccountName: default
+      securityContext:
+        runAsGroup: 1000
+        runAsUser: 1000
+      volumes:
+        - name: config-volume
+          configMap:
+            name: trino-cluster-trino-coordinator
+        - name: catalog-volume
+          configMap:
+            name: trino-cluster-trino-catalog
+        - name: schemas-volume
+          configMap:
+            name: trino-cluster-trino-schemas-volume-coordinator
+        - name: access-control-volume
+          configMap:
+            name: trino-cluster-trino-access-control-volume-coordinator
+        - name: file-authentication-volume
+          secret:
+            secretName: trino-auth-secret
+            items:
+              - key: password.db
+                path: password.db
+              - key: group.db
+                path: group.db
+        - name: jmx-exporter-config-volume
+          configMap:
+            name: trino-cluster-trino-jmx-exporter-config-coordinator
+        - name: certificates
+          secret:
+            secretName: certificates
+        - emptyDir: {}
+          name: generated-files
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - cat /etc/trino/certificates/tls.crt /etc/trino/certificates/tls.key > /etc/trino/generated/tls.pem
+        image: busybox:1.36
+        imagePullPolicy: IfNotPresent
+        name: init-coordinator
+        volumeMounts:
+        - mountPath: /etc/trino/certificates
+          name: certificates
+          readOnly: true
+        - mountPath: /etc/trino/generated
+          name: generated-files
+          readOnly: false
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: trino-coordinator
+          image: trinodb/trino:461
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          env:
+            []
+          envFrom:
+            []
+          volumeMounts:
+            - mountPath: /etc/trino
+              name: config-volume
+            - mountPath: /etc/trino/catalog
+              name: catalog-volume
+            - mountPath: /etc/trino/schemas
+              name: schemas-volume
+            - mountPath: /etc/trino/access-control
+              name: access-control-volume
+            - name: certificates
+              mountPath: /etc/trino/certificates
+            - mountPath: /etc/trino/auth
+              name: file-authentication-volume
+            - mountPath: /etc/trino/generated
+              name: generated-files
+              readOnly: false
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: jmx-registry
+              containerPort: 9080
+              protocol: TCP
+            - name: jmx-server
+              containerPort: 9081
+              protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /v1/info
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          readinessProbe:
+            exec:
+              command: [/usr/lib/trino/bin/health-check]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          lifecycle:
+            {}
+          resources:
+            {}
+        - name: jmx-exporter
+          image: bitnami/jmx-exporter:latest
+          imagePullPolicy: Always
+          securityContext:
+            {}
+          args:
+            - "5556"
+            - /etc/jmx-exporter/jmx-exporter-config.yaml
+          volumeMounts:
+            - mountPath: /etc/jmx-exporter/
+              name: jmx-exporter-config-volume
+          resources:
+            {}
+          ports:
+            - name: jmx-exporter
+              containerPort: 5556
+              protocol: TCP
+---
+# Source: trino/templates/deployment-worker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trino-cluster-trino-worker
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: worker
+    trino.io/network-policy-protection: disabled
+spec:
+  progressDeadlineSeconds: 600
+  revisionHistoryLimit: 10
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trino
+      app.kubernetes.io/instance: trino-cluster
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      annotations:
+        checksum/catalog-config: 3e8d6105d2d54495e15c646bb32ca97084fcb7dfc9226c64bec67f825f92ba74
+        checksum/worker-config: 4717b093b933dd9d7ede32f386e5c6c638307f4923a3031cbe3535b4b48a6e6a
+      labels:
+        helm.sh/chart: trino-0.32.0
+        app.kubernetes.io/name: trino
+        app.kubernetes.io/instance: trino-cluster
+        app.kubernetes.io/version: "461"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: worker
+        trino.io/network-policy-protection: disabled
+    spec:
+      serviceAccountName: default
+      securityContext:
+        runAsGroup: 1000
+        runAsUser: 1000
+      volumes:
+        - name: config-volume
+          configMap:
+            name: trino-cluster-trino-worker
+        - name: catalog-volume
+          configMap:
+            name: trino-cluster-trino-catalog
+        - name: schemas-volume
+          configMap:
+            name: trino-cluster-trino-schemas-volume-worker
+        - name: jmx-exporter-config-volume
+          configMap:
+            name: trino-cluster-trino-jmx-exporter-config-worker
+        - name: certificates
+          secret:
+            secretName: certificates
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: trino-worker
+          image: trinodb/trino:461
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          env:
+            []
+          envFrom:
+            []
+          volumeMounts:
+            - mountPath: /etc/trino
+              name: config-volume
+            - mountPath: /etc/trino/catalog
+              name: catalog-volume
+            - mountPath: /etc/trino/schemas
+              name: schemas-volume
+            - name: certificates
+              mountPath: /etc/trino/certificates
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: jmx-registry
+              containerPort: 9080
+              protocol: TCP
+            - name: jmx-server
+              containerPort: 9081
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /v1/info
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          readinessProbe:
+            exec:
+              command: [/usr/lib/trino/bin/health-check]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          lifecycle:
+          resources:
+            {}
+        - name: jmx-exporter
+          image: bitnami/jmx-exporter:latest
+          imagePullPolicy: Always
+          securityContext:
+            {}
+          args:
+            - "5556"
+            - /etc/jmx-exporter/jmx-exporter-config.yaml
+          volumeMounts:
+            - mountPath: /etc/jmx-exporter/
+              name: jmx-exporter-config-volume
+          resources:
+            {}
+          ports:
+            - name: jmx-exporter
+              containerPort: 5556
+              protocol: TCP
+---
+# Source: trino/templates/servicemonitor-coordinator.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: trino-cluster-trino
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trino
+      app.kubernetes.io/instance: trino-cluster
+      app.kubernetes.io/component: coordinator
+  namespaceSelector:
+    matchNames:
+      - trino
+  endpoints:
+    - port: jmx-exporter
+      interval: 30s
+---
+# Source: trino/templates/servicemonitor-worker.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: trino-cluster-trino-worker
+  namespace: trino
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trino
+      app.kubernetes.io/instance: trino-cluster
+      app.kubernetes.io/component: worker
+  namespaceSelector:
+    matchNames:
+      - trino
+  endpoints:
+    - port: jmx-exporter
+      interval: 30s
+---
+# Source: trino/templates/tests/test-jmx.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-cluster-trino-test-jmx
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: test
+    test: jmx
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": hook-succeeded
+data:
+  test.py: |
+    from urllib.request import urlopen
+    from urllib.error import URLError, HTTPError
+    import json
+    import logging
+    import sys
+    import time
+
+    logger = logging.getLogger(__name__)
+    target_service = sys.argv[1]
+    url = f"http://prometheus-operator-kube-p-prometheus:9090/api/v1/targets?scrapePool=serviceMonitor/trino/{target_service}/0&state=active"
+    while True:
+      try:
+        with urlopen(url) as response:
+          data = json.load(response)
+      except (URLError, HTTPError) as e:
+          logger.warning("Error fetching targets, Prometheus service might not be ready: ", e)
+          time.sleep(2)  # Retry after 2 seconds
+          continue
+
+      try:
+        service_name = data["data"]["activeTargets"][0]["discoveredLabels"]["__meta_kubernetes_service_name"]
+      except (KeyError, IndexError) as e:
+        logger.warning("Invalid Prometheus response: ", e)
+        time.sleep(2)  # Retry after 2 seconds
+        continue
+
+      if service_name == target_service:
+        logger.info(f"Found expected service '{service_name}' in Prometheus targets!")
+        break
+---
+# Source: trino/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: trino-cluster-trino-test-connection
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: test
+    test: connection
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: cli
+      image: trinodb/trino:461
+      command: ['trino']
+      args:
+      # port must match coordinator.additionalExposedPorts
+      - trino://trino-cluster-trino.trino:8443?SSL=true&SSLVerification=FULL&SSLTrustStorePath=/etc/trino/certificates/tls.crt
+      - --user=admin
+      - --password
+      - --debug
+      - --execute=SELECT 1
+      - --no-progress
+      env:
+        - name: TRINO_PASSWORD
+          # must match test-values.yaml
+          value: admin123
+      volumeMounts:
+        - name: certificates
+          readOnly: true
+          mountPath: "/etc/trino/certificates"
+  volumes:
+    - name: certificates
+      secret:
+        secretName: certificates
+  restartPolicy: Never
+---
+# Source: trino/templates/tests/test-jmx.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: trino-cluster-trino-test-jmx
+  labels:
+    helm.sh/chart: trino-0.32.0
+    app.kubernetes.io/name: trino
+    app.kubernetes.io/instance: trino-cluster
+    app.kubernetes.io/version: "461"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: test
+    test: jmx
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  containers:
+    - name: trino-jmx-coordinator
+      image: trinodb/trino:461
+      command: ["/bin/bash", "-c"]
+      args:
+        - curl -s trino-cluster-trino.trino:5556/metrics | grep -q trino
+    - name: trino-jmx-worker
+      image: trinodb/trino:461
+      command: ["/bin/bash", "-c"]
+      args:
+        - curl -s trino-cluster-trino-worker.trino:5556/metrics | grep -q trino
+    - name: service-monitor-coordinator
+      image: python:3-slim
+      command: [ "python", "/tests/test.py" ]
+      args: ["trino-cluster-trino"]
+      volumeMounts:
+        - name: tests
+          mountPath: /tests
+    - name: service-monitor-worker
+      image: python:3-slim
+      command: ["python", "/tests/test.py"]
+      args: ["trino-cluster-trino-worker"]
+      volumeMounts:
+        - name: tests
+          mountPath: /tests
+  volumes:
+    - name: tests
+      configMap:
+        name: trino-cluster-trino-test-jmx
+  restartPolicy: Never
