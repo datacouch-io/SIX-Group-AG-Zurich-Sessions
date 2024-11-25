@@ -1,0 +1,30 @@
+sudo apt install apache2-utils
+htpasswd -c -B -b password.db admin admin123
+
+kubectl create namespace trino
+
+kubectl create secret generic trino-auth-secret -n trino --from-file=password.db=./password.db 
+
+kubectl annotate secret trino-auth-secret \
+  meta.helm.sh/release-name=trino-cluster \
+  meta.helm.sh/release-namespace=trino \
+  --namespace trino
+
+kubectl label secret trino-auth-secret \
+  app.kubernetes.io/managed-by=Helm \
+  --namespace trino
+
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout tls.key -out tls.crt -subj "/CN=trino-cluster-trino.trino.svc.cluster.local"
+
+kubectl create secret tls certificates --cert=tls.crt --key=tls.key -n trino
+
+
+openssl pkcs12 -export -out trino-keystore.p12 -inkey tls.key -in tls.crt -name "trino-client"
+password - admin123
+
+
+sudo apt install openjdk-11-jre-headless
+keytool -import -alias trino-server -file tls.crt -keystore trino-truststore.jks
+
+configure DBeaver to enable ssl, configure keystore, keystore password, trustore path and truststore password

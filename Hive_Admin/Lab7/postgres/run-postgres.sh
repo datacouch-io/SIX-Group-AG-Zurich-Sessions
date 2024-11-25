@@ -1,0 +1,1 @@
+helm install postgres oci://registry-1.docker.io/bitnamicharts/postgresql  -n metastore -f postgres/custom-values.yaml

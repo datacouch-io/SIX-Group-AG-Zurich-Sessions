@@ -1,0 +1,167 @@
+server:
+  workers: 1
+  config:
+    query:
+      maxMemory: "4GB"
+    https:
+      enabled: true
+      keystore:
+        path: /etc/trino/generated/tls.pem
+    authenticationType: PASSWORD
+  autoscaling:
+    enabled: true  # Enable autoscaling
+    minReplicas: 1  # Minimum number of worker pods
+    maxReplicas: 3  # Maximum number of worker pods
+    targetCPUUtilizationPercentage: 50  # Scale based on 50% CPU utilization
+    targetMemoryUtilizationPercentage: 70  # Scale based on 70% memory utilization
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 300  # Time to wait before scaling down
+        policies:
+        - type: Percent
+          value: 50  # Scale down by 50% of the current replicas
+          periodSeconds: 15
+      scaleUp:
+        stabilizationWindowSeconds: 0  # Immediately scale up without delay
+        policies:
+        - type: Percent
+          value: 100  # Scale up by 100% of the current replicas
+          periodSeconds: 15
+        - type: Pods
+          value: 2  # Scale up by 2 pods if required
+          periodSeconds: 15
+        selectPolicy: Max  # Use the max policy for scaling actions
+
+additionalConfigProperties:
+  - internal-communication.shared-secret=4f2c3e5647f59c0b7e3f5b4d6b9e401e2c8e5a7b21fa5b6f08eae0131f20ff24
+  - http-server.authentication.allow-insecure-over-http=true
+  - http-server.process-forwarded=true
+
+service:
+  type: ClusterIP
+  annotations:
+    custom/name: value
+  port: 8080
+  additionalPorts:
+    https:
+      servicePort: 8443
+      name: https
+      port: 8443
+      protocol: TCP
+
+auth:
+  passwordAuthSecret: trino-auth-secret
+  groups: |
+    finance:admin,alice,bob
+    marketing:bob
+  refreshPeriod: 15s
+
+secretMounts:
+  - name: certificates
+    secretName: certificates
+    path: /etc/trino/certificates
+
+coordinator:
+  config:
+    query:
+      maxMemoryPerNode: "2GB"
+  additionalVolumes:
+    - name: generated-files
+      emptyDir: {}
+  additionalVolumeMounts:
+    - name: generated-files
+      mountPath: /etc/trino/generated
+      readOnly: false
+  additionalExposedPorts:  # Ensure the HTTPS port is exposed correctly
+    https:
+      servicePort: 8443
+      name: https
+      port: 8443
+      protocol: TCP
+  resources:
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+
+initContainers:
+  coordinator:
+    - name: init-coordinator
+      image: busybox:1.36
+      imagePullPolicy: IfNotPresent
+      command: ['sh', '-c', "cat /etc/trino/certificates/tls.crt /etc/trino/certificates/tls.key > /etc/trino/generated/tls.pem"]
+      volumeMounts:
+        - name: certificates
+          readOnly: true
+          mountPath: "/etc/trino/certificates"
+        - name: generated-files
+          readOnly: false
+          mountPath: "/etc/trino/generated"
+
+worker:
+  config:
+    query:
+      maxMemoryPerNode: "2GB"
+  resources:
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+
+accessControl:
+  type: configmap
+  refreshPeriod: 60s
+  configFile: "rules.json"
+  rules:
+    rules.json: |-
+      {
+        "catalogs": [
+          {
+            "user": "admin",
+            "catalog": ".*",
+            "allow": "all"
+          },
+          {
+            "user": "alice",
+            "catalog": "(tpch|system)",
+            "allow": "read-only"
+          },
+          {
+            "group": "marketing",
+            "catalog": "(tpch|system)",
+            "allow": "read-only"
+          }
+        ],
+        "schemas": [
+          {
+            "user": "admin",
+            "schema": ".*",
+            "owner": true
+          },
+          {
+            "user": "alice",
+            "owner": false
+          }
+        ]
+      }
+
+ingress:
+  enabled: false
+  hosts:
+    - host: trino.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: trino-cluster-trino
+              port:
+                number: 8443
+  tls:
+    - hosts:
+        - trino.local
+      secretName: certificates

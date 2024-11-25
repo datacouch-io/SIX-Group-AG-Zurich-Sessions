@@ -25,13 +25,13 @@ spec:
         env:
           - name: AWS_ACCESS_KEY
             valueFrom:
-              secretKeyRef:
-                name: minio-credentials
+              configMapKeyRef:
+                name: metastore-env
                 key: AWS_ACCESS_KEY
           - name: AWS_SECRET_ACCESS_KEY
             valueFrom:
-              secretKeyRef:
-                name: minio-credentials
+              configMapKeyRef:
+                name: metastore-env
                 key: AWS_SECRET_ACCESS_KEY
           - name: S3_BUCKET
             valueFrom:
@@ -70,9 +70,9 @@ spec:
                 key: HIVE_METASTORE_SERVER_MIN_THREADS
           - name: POSTGRES_PASSWORD
             valueFrom:
-              secretKeyRef:
-                name: postgres-secret
-                key: adminPasswordKey
+              configMapKeyRef:
+                name: metastore-env
+                key: POSTGRES_PASSWORD
           - name: POSTGRES_USER
             valueFrom:
               configMapKeyRef:

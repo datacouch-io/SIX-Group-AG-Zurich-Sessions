@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,7 +21,7 @@ spec:
         command: ["sh", "-c", "sleep 30"]
       containers:
       - name: hive-metastore
-        image: metastore
+        image: metastore-new
         imagePullPolicy: Never
         env:
           - name: AWS_ACCESS_KEY
@@ -68,21 +69,26 @@ spec:
               configMapKeyRef:
                 name: metastore-env
                 key: HIVE_METASTORE_SERVER_MIN_THREADS
-          - name: POSTGRES_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: postgres-secret
-                key: adminPasswordKey
           - name: POSTGRES_USER
             valueFrom:
               configMapKeyRef:
                 name: metastore-env
                 key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: adminPasswordKey
           - name: POSTGRES_HOST
             valueFrom:
               configMapKeyRef:
                 name: metastore-env
                 key: POSTGRES_HOST
+          - name: POSTGRES_URL
+            valueFrom:
+              configMapKeyRef:
+                name: metastore-env
+                key: POSTGRES_URL
           - name: POSTGRES_PORT
             valueFrom:
               configMapKeyRef:
@@ -108,3 +114,12 @@ spec:
           requests:
             memory: 500Mi
             cpu: "0.5"
+        volumeMounts:
+          - name: postgres-postgresql-crt
+            mountPath: /etc/postgres  # Define where you want to mount your certificate in the container
+            readOnly: true
+      volumes:
+      - name: postgres-postgresql-crt
+        secret:
+          secretName: postgres-postgresql-crt  # Name of your secret
+          defaultMode: 0600  

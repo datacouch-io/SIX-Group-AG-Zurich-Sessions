@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -68,16 +69,16 @@ spec:
               configMapKeyRef:
                 name: metastore-env
                 key: HIVE_METASTORE_SERVER_MIN_THREADS
-          - name: POSTGRES_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: postgres-secret
-                key: adminPasswordKey
           - name: POSTGRES_USER
             valueFrom:
               configMapKeyRef:
                 name: metastore-env
                 key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: adminPasswordKey
           - name: POSTGRES_HOST
             valueFrom:
               configMapKeyRef:

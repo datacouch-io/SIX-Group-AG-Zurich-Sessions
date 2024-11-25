@@ -1,0 +1,9 @@
+auth:
+  enablePostgresUser: true
+  database: "hivemetastore"
+  existingSecret: "postgres-secret"
+  secretKeys:
+    adminPasswordKey: "adminPasswordKey"
+    userPasswordKey: "userPasswordKey"
+    replicationPasswordKey: "replicationPasswordKey"
+    usePasswordFiles: false

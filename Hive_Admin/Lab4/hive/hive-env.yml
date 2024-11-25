@@ -8,6 +8,8 @@ metadata:
   namespace: metastore
 data:
   K8S_NAMESPACE: "metastore"
+  AWS_ACCESS_KEY: "minio"
+  AWS_SECRET_ACCESS_KEY: "minio123"
   S3_BUCKET: "lakehouse"
   HIVE_S3_BUCKET: "lakehouse/db"
   S3_ENDPOINT: "http://myminio-hl.minio-tenant.svc.cluster.local:9000"
@@ -19,6 +21,7 @@ data:
   HIVE_METASTORE_SERVER_MAX_THREADS: "100"
   POSTGRES_DB: "hivemetastore"
   POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "admin123"
   POSTGRES_HOST: "postgres-postgresql"
   POSTGRES_PORT: "5432"
 

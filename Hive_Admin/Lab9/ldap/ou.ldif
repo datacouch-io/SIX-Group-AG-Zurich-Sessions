@@ -1,0 +1,3 @@
+dn: ou=sixgroups,dc=min,dc=io
+objectClass: organizationalUnit
+ou: sixgroups

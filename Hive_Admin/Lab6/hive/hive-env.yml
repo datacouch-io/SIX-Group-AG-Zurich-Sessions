@@ -17,6 +17,7 @@ data:
   HIVE_PORT: "9083"
   HIVE_METASTORE_SERVER_MIN_THREADS: "1"
   HIVE_METASTORE_SERVER_MAX_THREADS: "100"
+  POSTGRES_URL: "jdbc:postgresql://postgres-postgresql:5432/hivemetastore?sslmode=require&amp;sslrootcert=/etc/postgres/ca.crt&amp;sslcert=/etc/postgres/tls.crt&amp;sslkey=/etc/postgres/tls.key"
   POSTGRES_DB: "hivemetastore"
   POSTGRES_USER: "postgres"
   POSTGRES_HOST: "postgres-postgresql"
